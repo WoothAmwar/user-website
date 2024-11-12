@@ -61,11 +61,17 @@ export default function Home() {
     const [websiteDownvotes, setWebsiteDownvotes] = useState(0);
     const [votedUp, setVotedUp] = useState(false);
     const [votedDown, setVotedDown] = useState(false);
+    const [websiteUrl, setWebsiteUrl] = useState("");
 
 
     useEffect(() => {
       setWebsiteUpvotes(website_info.website_upvotes);
       setWebsiteDownvotes(website_info.website_remove_votes);
+      if (website_info.website_name.includes("https")) {
+        setWebsiteUrl(website_info.website_name);
+      } else {
+        setWebsiteUrl(`https://${website_info.website_name}`);
+      }
     }, [])
     // current_upvotes, current_downvotes, website_name
     async function buttonVoteChange(vote_type) {
@@ -91,18 +97,18 @@ export default function Home() {
         console.log("Error changing vote", error);
       }
     }
-  
+    
     return (
       <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col border-2">
         <div className="col-span-1">#{idx+1}</div>
-        <div className="col-span-4"><a className="link" href={`${website_info.website_name}`}>{website_info.website_name}<GoLink /></a></div>
+        <div className="col-span-4"><a className="link" href={websiteUrl} target="_blank" rel="noopener noreferrer">{websiteUrl}<GoLink /></a></div>
         <div className="col-span-1 grid grid-cols-3">
           <div className="col-span-2">{websiteUpvotes} Votes </div>
           <div className="col-span-1">
             <button className="mx-2" onClick={() => {setVotedUp(true);  if (!votedUp) {setWebsiteUpvotes(websiteUpvotes+1);buttonVoteChange("upvote");}}}>
               {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
             </button>
-            <button className="mx-2" onClick={() => {setVotedDown(true); if (!votedDown) {setWebsiteDownvotes(websiteDownvotes+1);buttonVoteChange("downvote");} if (websiteDownvotes>4) { setVotedTicker(votedTicker-1);}}}>
+            <button className="mx-2" onClick={() => {setVotedDown(true); if (!votedDown) {setWebsiteDownvotes(websiteDownvotes+1);buttonVoteChange("downvote");} if (websiteDownvotes>9) { setVotedTicker(votedTicker-1);}}}>
               {votedDown ? <GoXCircleFill /> : <GoX />} 
               {/* {websiteDownvotes} */}
             </button>

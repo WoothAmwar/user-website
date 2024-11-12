@@ -9,7 +9,7 @@ export async function POST(req, { params }) {
     const vote_type = (await params).slug;  // Either upvote or downvote
     const request_data = await req.json();  // has current_upvotes, current_downvotes, website_name
     const supabase = await createClient();
-    const downvotes_to_remove = 5;
+    const downvotes_to_remove = 10;
     // console.log("CURR UP:", request_data?.current_upvotes);
     // console.log("CURR DWN:", request_data?.current_downvotes);
     const {data, error} = await supabase
