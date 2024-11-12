@@ -143,6 +143,10 @@ export default function Home() {
     )
   }
 
+  useEffect(() => {
+    document.title = `Website Ranker`;
+  }, [])
+
   return (
     <div>
       <p className="text-4xl">Welcome!</p>
