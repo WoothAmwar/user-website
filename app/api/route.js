@@ -9,6 +9,11 @@ export async function POST(req) {
     const request_data = await req.json();
     const supabase = await createClient();
     // const website_name = "https://app.flocus.com";
+    if (!valid_website({website_name: request_data.name})) {
+        return Response.json({ "data": {"valid": 0} }, {
+            status: 200
+        });
+    }
     const { data, error } = await supabase
         .from('Websites')
         .insert({
@@ -17,11 +22,22 @@ export async function POST(req) {
             website_remove_votes:0
         })
         .select()
-    console.log("INS DTA:", data);
-    console.log("INS ERR:", error);
-    return Response.json({ "data": data }, {
+    // console.log("INS DTA:", data);
+    // console.log("INS ERR:", error);
+    return Response.json({ "data": {"valid": 1} }, {
         status: 200
     });
+}
+
+const valid_website = ({website_name}) => {
+    console.log("WEBN:", website_name);
+    const bad_words = ["porn", "sex", "nude", "naked", "hentai", "boob", "nsfw", "ass", "tit", "cock", "penis", "fuck", "shit", "bitch", "nigg"];
+    for (var i=0; i<bad_words.length; i++) {
+        if (website_name.includes(bad_words[i])) {
+            return false
+        }
+    }
+    return true
 }
 
 export async function GET(req) {
@@ -29,40 +45,10 @@ export async function GET(req) {
     var { data, error } = await supabase
         .from('Websites')
         .select()
-    console.log("GET DTA:", data);
-    console.log("GET ERR:", error);
+    // console.log("GET DTA:", data);
+    // console.log("GET ERR:", error);
     return Response.json({ "data": data }, {
         status: 200
     });
 }
 
-export async function DELETE(req) {
-    const request_data = await req.json();
-
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('anime_info')
-        .delete()
-        .eq('anime_name', request_data.name)
-        .select()
-
-    return Response.json({ "data": data }, {
-        status: 200
-    });
-}
-
-export async function PUT(req) {
-    const request_data = await req.json();
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('anime_info')
-        .update({
-            current_episode: request_data?.current_episode
-        })
-        .eq('anime_name', request_data.name)
-        .select()
-
-    return Response.json({ "data": data }, {
-        status: 200
-    });
-}

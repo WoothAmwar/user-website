@@ -21,6 +21,14 @@ body {
   padding: 1rem;
 }
 
+button {
+  border-color:darkslategrey;
+  border-radius: 10%;
+  border-width: 2px;
+
+  padding: 3px;
+}
+
 .link {
   color: blue
 }
