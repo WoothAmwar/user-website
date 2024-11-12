@@ -47,7 +47,7 @@ export default function Home() {
     return (
       <div>
         <form id="add_website_form" onSubmit={(e) => { e.preventDefault(); submit_form() }}>
-          <label htmlFor="name">Website Name</label>
+          <label className="font-semibold" htmlFor="name">Website Name to Add </label>
           <input className="border-2 border-neutral-500 rounded" type="text" name="name" id="name" required />
 
           <button type="submit">Add Website</button>
