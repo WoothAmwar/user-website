@@ -14,6 +14,53 @@ function sort_websites_by_upvotes(a, b) {
   return 0;
 }
 
+function FeedbackForm() {
+  const [gaveFeedback, setGaveFeedback] = useState(false);
+  const [feedbackContent, setFeedbackContent] = useState("");
+
+  async function submit_form() {
+    var form_data = new FormData(document.getElementById("feedback_form"));
+    const feedback = form_data.get("feedback");
+
+    // console.log("Days:", days_since_date(form_data.get("airing_date")));
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          feedback_content: feedback,
+        })
+      });
+      setFeedbackContent(feedback);
+      setGaveFeedback(true);
+    } catch (error) {
+      console.log("Error giving feedback:", error);
+    }
+  }
+
+  return (
+    (
+      gaveFeedback ?
+        (
+          <div>
+            Received Feedback: <strong>{feedbackContent}</strong>
+          </div>
+        ) : (
+          <div>
+            <form id="feedback_form" onSubmit={(e) => { e.preventDefault(); submit_form() }}>
+              <label className="font-semibold" htmlFor="feedback">Feedback: </label>
+              <input className="border-2 border-neutral-500 rounded p-3" style={{width: "100%"}} type="text" name="feedback" id="feedback" required />
+
+              <button type="submit">Submit Feedback</button>
+            </form>
+          </div>
+        ))
+  )
+}
+
 export default function Home() {
   const [addedWebsite, setAddedWebsite] = useState(false);
   const [votedTicker, setVotedTicker] = useState(0);
@@ -97,19 +144,19 @@ export default function Home() {
         console.log("Error changing vote", error);
       }
     }
-    
+
     return (
       <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col border-2">
-        <div className="col-span-1">#{idx+1}</div>
+        <div className="col-span-1">#{idx + 1}</div>
         <div className="col-span-4"><a className="link" href={websiteUrl} target="_blank" rel="noopener noreferrer">{websiteUrl}<GoLink /></a></div>
         <div className="col-span-1 grid grid-cols-3">
           <div className="col-span-2">{websiteUpvotes} Votes </div>
           <div className="col-span-1">
-            <button className="mx-2" onClick={() => {setVotedUp(true);  if (!votedUp) {setWebsiteUpvotes(websiteUpvotes+1);buttonVoteChange("upvote");}}}>
+            <button className="mx-2" onClick={() => { setVotedUp(true); if (!votedUp) { setWebsiteUpvotes(websiteUpvotes + 1); buttonVoteChange("upvote"); } }}>
               {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
             </button>
-            <button className="mx-2" onClick={() => {setVotedDown(true); if (!votedDown) {setWebsiteDownvotes(websiteDownvotes+1);buttonVoteChange("downvote");} if (websiteDownvotes>9) { setVotedTicker(votedTicker-1);}}}>
-              {votedDown ? <GoXCircleFill /> : <GoX />} 
+            <button className="mx-2" onClick={() => { setVotedDown(true); if (!votedDown) { setWebsiteDownvotes(websiteDownvotes + 1); buttonVoteChange("downvote"); } if (websiteDownvotes > 9) { setVotedTicker(votedTicker - 1); } }}>
+              {votedDown ? <GoXCircleFill /> : <GoX />}
               {/* {websiteDownvotes} */}
             </button>
           </div>
@@ -157,8 +204,8 @@ export default function Home() {
     <div>
       <p className="text-4xl">Welcome!</p>
       <div className="grid grid-cols-4 gap-x-3">
-        <div className="col-start-1 col-span-1 border-r-2 border-gray-700 border-solid px-3">
-          <p>Here, you can add the link to any cool websites that you find and vote 
+        <div className="col-start-1 col-span-1 border-r-2 border-gray-700 border-solid px-3 mb-3">
+          <p>Here, you can add the link to any cool websites that you find and vote
             on websites that you like or don't like. </p>
           <br />
           <p>If a website gets enough down votes, it will be removed from the list</p>
@@ -166,6 +213,11 @@ export default function Home() {
           <p>For Websites you Do Like, click the Check Mark next to the website name</p>
           <br />
           <p>For Websites you Do Not Like, click the X Mark next to the website name</p>
+          <br />
+          <br />
+          <p>If you have any feedback on the website, or have any ideas for features to add to the website, 
+            please type into the textbox below and click on the "Submit Feedback" button</p>
+          <br />
         </div>
 
         <div className="col-start-2 col-span-3 px-3">
@@ -173,6 +225,7 @@ export default function Home() {
           <DisplayWebsites />
         </div>
       </div>
+      <FeedbackForm />
     </div>
   );
 }
