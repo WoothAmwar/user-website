@@ -61,6 +61,175 @@ function FeedbackForm() {
   )
 }
 
+
+function DisplaySingleWebsite({ website_info, idx, onVoteError }) {
+  const [websiteUpvotes, setWebsiteUpvotes] = useState(0);
+  const [websiteDownvotes, setWebsiteDownvotes] = useState(0);
+  const [votedUp, setVotedUp] = useState(false);
+  const [votedDown, setVotedDown] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [isVoting, setIsVoting] = useState(false);
+
+  useEffect(() => {
+    setWebsiteUpvotes(website_info.website_upvotes);
+    setWebsiteDownvotes(website_info.website_remove_votes);
+    setWebsiteUrl(website_info.website_name.includes("https") 
+      ? website_info.website_name 
+      : `https://${website_info.website_name}`
+    );
+  }, [website_info]);
+
+  async function buttonVoteChange(vote_type) {
+    if (isVoting || (votedUp && vote_type === "upvote") || (votedDown && vote_type === "downvote")) {
+      return;
+    }
+
+    setIsVoting(true);
+
+    try {
+      const response = await fetch(`/api/voting/${vote_type}`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_upvotes: websiteUpvotes,
+          current_downvotes: websiteDownvotes,
+          website_name: website_info.website_name,
+        }),
+        credentials: 'include' // Important for sending cookies
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Vote failed');
+      }
+
+      // Update local state only after successful vote
+      if (vote_type === "upvote") {
+        setVotedUp(true);
+        setWebsiteUpvotes(prev => prev + 1);
+      } else {
+        setVotedDown(true);
+        setWebsiteDownvotes(prev => prev + 1);
+      }
+
+    } catch (error) {
+      // Revert any optimistic updates
+      if (vote_type === "upvote") {
+        setVotedUp(false);
+        setWebsiteUpvotes(website_info.website_upvotes);
+      } else {
+        setVotedDown(false);
+        setWebsiteDownvotes(website_info.website_remove_votes);
+      }
+
+      // Show error message
+      onVoteError(error.message);
+    } finally {
+      setIsVoting(false);
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col border-2">
+      <div className="col-span-1">#{idx + 1}</div>
+      <div className="col-span-4">
+        <a 
+          className="link" 
+          href={websiteUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          {websiteUrl}<GoLink />
+        </a>
+      </div>
+      <div className="col-span-1 grid grid-cols-3">
+        <div className="col-span-2">{websiteUpvotes} Votes</div>
+        <div className="col-span-1">
+          <button 
+            className={`mx-2 ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => buttonVoteChange("upvote")}
+            disabled={isVoting || votedUp}
+          >
+            {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
+          </button>
+          <button 
+            className={`mx-2 ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => buttonVoteChange("downvote")}
+            disabled={isVoting || votedDown}
+          >
+            {votedDown ? <GoXCircleFill /> : <GoX />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WebsiteList() {
+  const [websites, setWebsites] = useState([]);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWebsites();
+  }, []);
+
+  async function fetchWebsites() {
+    try {
+      const response = await fetch('/api', {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch websites');
+      }
+
+      const data = await response.json();
+      setWebsites(data.data.sort((a, b) => b.website_upvotes - a.website_upvotes));
+    } catch (error) {
+      setError("Failed to load websites. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleVoteError(message) {
+    setError(message);
+    // Clear error after 5 seconds
+    setTimeout(() => setError(""), 5000);
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          {error}
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        {websites.map((website, idx) => (
+          <DisplaySingleWebsite 
+            key={website.website_name}
+            website_info={website}
+            idx={idx}
+            onVoteError={handleVoteError}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [addedWebsite, setAddedWebsite] = useState(false);
   const [votedTicker, setVotedTicker] = useState(0);
@@ -103,98 +272,98 @@ export default function Home() {
     )
   }
 
-  function DisplaySingleWebsite({ website_info, idx }) {
-    const [websiteUpvotes, setWebsiteUpvotes] = useState(0);
-    const [websiteDownvotes, setWebsiteDownvotes] = useState(0);
-    const [votedUp, setVotedUp] = useState(false);
-    const [votedDown, setVotedDown] = useState(false);
-    const [websiteUrl, setWebsiteUrl] = useState("");
+  // function DisplaySingleWebsite({ website_info, idx }) {
+  //   const [websiteUpvotes, setWebsiteUpvotes] = useState(0);
+  //   const [websiteDownvotes, setWebsiteDownvotes] = useState(0);
+  //   const [votedUp, setVotedUp] = useState(false);
+  //   const [votedDown, setVotedDown] = useState(false);
+  //   const [websiteUrl, setWebsiteUrl] = useState("");
 
 
-    useEffect(() => {
-      setWebsiteUpvotes(website_info.website_upvotes);
-      setWebsiteDownvotes(website_info.website_remove_votes);
-      if (website_info.website_name.includes("https")) {
-        setWebsiteUrl(website_info.website_name);
-      } else {
-        setWebsiteUrl(`https://${website_info.website_name}`);
-      }
-    }, [])
-    // current_upvotes, current_downvotes, website_name
-    async function buttonVoteChange(vote_type) {
-      try {
-        const response = await fetch(`/api/voting/${vote_type}`, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            current_upvotes: websiteUpvotes,
-            current_downvotes: websiteDownvotes,
-            website_name: website_info.website_name
-          })
-        });
-        if (!response.ok) {
-          // Revert on error
-          setWebsiteUpvotes(websiteUpvotes);
-          setWebsiteDownvotes(websiteDownvotes);
-          throw new Error('Vote update failed');
-        }
-      } catch (error) {
-        console.log("Error changing vote", error);
-      }
-    }
+  //   useEffect(() => {
+  //     setWebsiteUpvotes(website_info.website_upvotes);
+  //     setWebsiteDownvotes(website_info.website_remove_votes);
+  //     if (website_info.website_name.includes("https")) {
+  //       setWebsiteUrl(website_info.website_name);
+  //     } else {
+  //       setWebsiteUrl(`https://${website_info.website_name}`);
+  //     }
+  //   }, [])
+  //   // current_upvotes, current_downvotes, website_name
+  //   async function buttonVoteChange(vote_type) {
+  //     try {
+  //       const response = await fetch(`/api/voting/${vote_type}`, {
+  //         method: "POST",
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({
+  //           current_upvotes: websiteUpvotes,
+  //           current_downvotes: websiteDownvotes,
+  //           website_name: website_info.website_name,
+  //         })
+  //       });
+  //       if (!response.ok) {
+  //         // Revert on error
+  //         setWebsiteUpvotes(websiteUpvotes);
+  //         setWebsiteDownvotes(websiteDownvotes);
+  //         throw new Error('Vote update failed');
+  //       }
+  //     } catch (error) {
+  //       console.log("Error changing vote", error);
+  //     }
+  //   }
 
-    return (
-      <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col border-2">
-        <div className="col-span-1">#{idx + 1}</div>
-        <div className="col-span-4"><a className="link" href={websiteUrl} target="_blank" rel="noopener noreferrer">{websiteUrl}<GoLink /></a></div>
-        <div className="col-span-1 grid grid-cols-3">
-          <div className="col-span-2">{websiteUpvotes} Votes </div>
-          <div className="col-span-1">
-            <button className="mx-2" onClick={() => { setVotedUp(true); if (!votedUp) { setWebsiteUpvotes(websiteUpvotes + 1); buttonVoteChange("upvote"); } }}>
-              {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
-            </button>
-            <button className="mx-2" onClick={() => { setVotedDown(true); if (!votedDown) { setWebsiteDownvotes(websiteDownvotes + 1); buttonVoteChange("downvote"); } if (websiteDownvotes > 9) { setVotedTicker(votedTicker - 1); } }}>
-              {votedDown ? <GoXCircleFill /> : <GoX />}
-              {/* {websiteDownvotes} */}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  //   return (
+  //     <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col border-2">
+  //       <div className="col-span-1">#{idx + 1}</div>
+  //       <div className="col-span-4"><a className="link" href={websiteUrl} target="_blank" rel="noopener noreferrer">{websiteUrl}<GoLink /></a></div>
+  //       <div className="col-span-1 grid grid-cols-3">
+  //         <div className="col-span-2">{websiteUpvotes} Votes </div>
+  //         <div className="col-span-1">
+  //           <button className="mx-2" onClick={() => { setVotedUp(true); if (!votedUp) { setWebsiteUpvotes(websiteUpvotes + 1); buttonVoteChange("upvote"); } }}>
+  //             {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
+  //           </button>
+  //           <button className="mx-2" onClick={() => { setVotedDown(true); if (!votedDown) { setWebsiteDownvotes(websiteDownvotes + 1); buttonVoteChange("downvote"); } if (websiteDownvotes > 9) { setVotedTicker(votedTicker - 1); } }}>
+  //             {votedDown ? <GoXCircleFill /> : <GoX />}
+  //             {/* {websiteDownvotes} */}
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
-  function DisplayWebsites() {
-    const [all_websites_info, setAllWebsitesInfo] = useState([]);
-    // const all_websites_info = get_all_website_info();
-    useEffect(() => {
-      fetch(`/api`, {
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-        .then(response => response.json())
-        .then(data => {
-          var resp_data = data["data"];
-          resp_data = resp_data.sort(sort_websites_by_upvotes);
-          setAllWebsitesInfo(resp_data);
-        })
-    }, [addedWebsite, votedTicker])
+  // function DisplayWebsites() {
+  //   const [all_websites_info, setAllWebsitesInfo] = useState([]);
+  //   // const all_websites_info = get_all_website_info();
+  //   useEffect(() => {
+  //     fetch(`/api`, {
+  //       method: "GET",
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       }
+  //     })
+  //       .then(response => response.json())
+  //       .then(data => {
+  //         var resp_data = data["data"];
+  //         resp_data = resp_data.sort(sort_websites_by_upvotes);
+  //         setAllWebsitesInfo(resp_data);
+  //       })
+  //   }, [addedWebsite, votedTicker])
 
-    return (
-      <div className="flex flex-col align-center">
-        {all_websites_info.map((element, idx) => {
-          return (
-            <div key={idx}>
-              <DisplaySingleWebsite website_info={element} idx={idx} />
-            </div>
-          );
-        })}
-      </div>
-    )
-  }
+  //   return (
+  //     <div className="flex flex-col align-center">
+  //       {all_websites_info.map((element, idx) => {
+  //         return (
+  //           <div key={idx}>
+  //             <DisplaySingleWebsite website_info={element} idx={idx} />
+  //           </div>
+  //         );
+  //       })}
+  //     </div>
+  //   )
+  // }
 
   useEffect(() => {
     document.title = `Website Ranker`;
@@ -222,7 +391,7 @@ export default function Home() {
 
         <div className="col-start-2 col-span-3 px-3">
           <AddWebsite />
-          <DisplayWebsites />
+          <WebsiteList />
         </div>
       </div>
       <FeedbackForm />
