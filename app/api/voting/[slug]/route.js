@@ -225,7 +225,7 @@ export async function POST(req, { params }) {
       
       if (existingVote?.length > 0) {
         return Response.json({ 
-          error: 'You have already voted on this website' 
+          error: 'You have already voted for this website' 
         }, { status: 400 })
       }
       

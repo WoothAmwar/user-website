@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/server'
  * @returns 
  */
 export async function POST(req) {
-    const request_data = await req.json();
+    const request_data = await req.json();  // contains --- name:string, tags: string[]
     const supabase = await createClient();
     // const website_name = "https://app.flocus.com";
     if (!valid_website({website_name: request_data.name})) {
@@ -19,7 +19,8 @@ export async function POST(req) {
         .insert({
             website_name: request_data.name,
             website_upvotes:0,
-            website_remove_votes:0
+            website_remove_votes:0,
+            tags: request_data.tags
         })
         .select()
     // console.log("INS DTA:", data);
