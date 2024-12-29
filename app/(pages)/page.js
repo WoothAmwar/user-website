@@ -463,9 +463,10 @@ export default function Home() {
     <div className="min-h-screen bg-[#1a2238]">
       <div className="container mx-auto px-1 py-2">
         <div className="flex mb-4 mt-2">
-          <h1 className="flex-1 text-4xl font-bold text-[#ff6a3d]">Welcome!</h1>
+          <h1 className="flex-1 text-5xl font-bold text-[#ff6a3d]">Welcome!</h1>
+          <p className="text-xl text-[#ff6a3d]">Website for Hack Club Highseas</p>
           <Link key={1} className="flex-1 rounded-lg text-right" href="/data">
-              <p className="font-['Garamond'] text-[#ff6a3d] text-3xl">Data Page</p>
+              <p className="text-[#059669] text-4xl font-bold">Data Page</p>
           </Link>
         </div>
 
@@ -487,8 +488,10 @@ export default function Home() {
 
               <p className="text-[#1a2238]">For Websites you Do Not Like, click the X Mark next to the website name</p>
 
+              <p className="text-[#1a2238]">Check out the <span className="font-bold text-[#059669]">Data</span> page for some statistics.</p>
+
               <p className="text-[#1a2238]">If you have any feedback on the website, or have any ideas for features to add to the website,
-                please type into the textbox below and click on the <span className="font-bold">"Submit Feedback"</span> button at the bottom 
+                please type into the textbox and click on the <span className="font-bold">"Submit Feedback"</span> button at the bottom 
                 of the website.</p>
             </div>
              <br />

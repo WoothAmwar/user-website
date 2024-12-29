@@ -7,90 +7,102 @@ import * as d3 from 'd3';
 
 
 const BarChart = ({ data }) => {
-  const chartRef = useRef();
+    const chartRef = useRef();
 
-  useEffect(() => {
-    const svgWidth = 500;
-    const svgHeight = 300;
-    const margin = { top: 20, right: 10, bottom: 40, left: 40 };
-    const chartWidth = svgWidth - margin.left - margin.right;
-    const chartHeight = svgHeight - margin.top - margin.bottom;
+    useEffect(() => {
+        const svgWidth = 500;
+        const svgHeight = 300;
+        const margin = { top: 20, right: 10, bottom: 40, left: 40 };
+        const chartWidth = svgWidth - margin.left - margin.right;
+        const chartHeight = svgHeight - margin.top - margin.bottom;
 
-    const svg = d3
-      .select(chartRef.current)
-      .attr('width', svgWidth)
-      .attr('height', svgHeight);
+        const svg = d3
+            .select(chartRef.current)
+            .attr('width', svgWidth)
+            .attr('height', svgHeight);
 
-    const chart = svg
-      .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+        const chart = svg
+            .append('g')
+            .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    const xScale = d3
-      .scaleBand()
-      .domain(data.map((d) => d.name))
-      .range([0, chartWidth])
-      .padding(0.1);
+        const xScale = d3
+            .scaleBand()
+            .domain(data.map((d) => d.name))
+            .range([0, chartWidth])
+            .padding(0.1);
 
-    const yScale = d3
-      .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.value)])
-      .nice()
-      .range([chartHeight, 0]);
+        const yScale = d3
+            .scaleLinear()
+            .domain([0, d3.max(data, (d) => d.value)])
+            .nice()
+            .range([chartHeight, 0]);
 
-    chart
-      .selectAll('.bar')
-      .data(data)
-      .join('rect')
-      .attr('class', 'bar')
-      .attr('x', (d) => xScale(d.name))
-      .attr('y', (d) => yScale(d.value))
-      .attr('width', xScale.bandwidth())
-      .attr('height', (d) => chartHeight - yScale(d.value))
-      .attr('fill', '#3d71ff');
+        chart
+            .selectAll('.bar')
+            .data(data)
+            .join('rect')
+            .attr('class', 'bar')
+            .attr('x', (d) => xScale(d.name))
+            .attr('y', (d) => yScale(d.value))
+            .attr('width', xScale.bandwidth())
+            .attr('height', (d) => chartHeight - yScale(d.value))
+            .attr('fill', '#3d71ff');
 
-    // Add custom labels under each bar
-    chart
-      .selectAll('.bar-label')
-      .data(data)
-      .join('text')
-      .attr('class', 'bar-label')
-      .attr('x', (d) => xScale(d.name) + xScale.bandwidth() / 2)
-      .attr('y', chartHeight + 15) // Position below the bars
-      .attr('text-anchor', 'middle')
-      .style('font-size', '12px')
-      .style('fill', '#ff6a3d')
-      .text((d) => d.name);
+        // Add custom labels under each bar
+        chart
+            .selectAll('.bar-label')
+            .data(data)
+            .join('text')
+            .attr('class', 'bar-label')
+            .attr('x', (d) => xScale(d.name) + xScale.bandwidth() / 2)
+            .attr('y', chartHeight + 15) // Position below the bars
+            .attr('text-anchor', 'middle')
+            .style('font-size', '12px')
+            .style('fill', '#ff6a3d')
+            .text((d) => d.name);
 
-    // Add y-axis
-    chart
-      .append('g')
-      .attr('class', 'y-axis')
-      .call(d3.axisLeft(yScale));
+        // Add y-axis
+        chart
+            .append('g')
+            .attr('class', 'y-axis')
+            .call(d3.axisLeft(yScale));
 
-    // Add the x-axis without labels
-    chart
-      .append('g')
-      .attr('class', 'x-axis')
-      .attr('transform', `translate(0, ${chartHeight})`)
-      .call(d3.axisBottom(xScale).tickSize(0).tickFormat('')) // No tick labels
-      .select('.domain')
-      .remove(); // Remove the x-axis line
-  }, [data]);
+        // Add the x-axis without labels
+        chart
+            .append('g')
+            .attr('class', 'x-axis')
+            .attr('transform', `translate(0, ${chartHeight})`)
+            .call(d3.axisBottom(xScale).tickSize(0).tickFormat('')) // No tick labels
+            .select('.domain')
+            .remove(); // Remove the x-axis line
+    }, [data]);
 
-  return <svg ref={chartRef}></svg>;
+    return <svg ref={chartRef}></svg>;
+};
+
+const PercentageBar = ({ percentage }) => {
+    // Clamp the percentage to ensure it's between 0 and 100
+    const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+
+    const greenStyle = {
+        width: `${clampedPercentage}%`,
+        transition: 'width 0.3s ease',
+    };
+
+    const redStyle = {
+        width: `${100 - clampedPercentage}%`,
+        transition: 'width 0.3s ease',
+    };
+
+    return (
+        <div className="flex w-full h-5 overflow-hidden rounded-md border-2 border-slate-500">
+            <div className="bg-[#22C55E]" style={greenStyle}></div>
+            <div className="bg-[#EF4444]" style={redStyle}></div>
+        </div>
+    );
 };
 
 const website_categories = ['Personal Website', 'Entertainment', 'Mainstream', 'Technology', 'Education', 'Sports'];
-
-// function sort_websites_by_upvotes(a, b) {
-//   if (a["website_upvotes"] < b["website_upvotes"]) {
-//     return 1;
-//   }
-//   if (a["website_upvotes"] > b["website_upvotes"]) {
-//     return -1;
-//   }
-//   return 0;
-// }
 
 function FeedbackForm() {
     const [gaveFeedback, setGaveFeedback] = useState(false);
@@ -187,18 +199,18 @@ function TagCounter() {
                     website.tags.forEach(single_tag => {
                         setAllTags(prevTotalTags => [...prevTotalTags, single_tag]);
                         if (temp_tag_dict.length == 0) {
-                            temp_tag_dict.push({"name":single_tag, "value":1})
+                            temp_tag_dict.push({ "name": single_tag, "value": 1 })
                         } else {
                             var found_tag = false;
-                            for (var i=0; i<temp_tag_dict.length; i++) {
+                            for (var i = 0; i < temp_tag_dict.length; i++) {
                                 if (temp_tag_dict[i]["name"] == single_tag) {
-                                    temp_tag_dict[i] = {"name": single_tag, "value": temp_tag_dict[i]["value"]+1};
-                                    found_tag=true;
+                                    temp_tag_dict[i] = { "name": single_tag, "value": temp_tag_dict[i]["value"] + 1 };
+                                    found_tag = true;
                                     continue
                                 }
                             }
                             if (!found_tag) {
-                                temp_tag_dict.push({"name":single_tag, "value":1});
+                                temp_tag_dict.push({ "name": single_tag, "value": 1 });
                             }
                         }
                     })
@@ -206,37 +218,15 @@ function TagCounter() {
             });
             setGotTags(true);
             setAllTagDicts(temp_tag_dict);
-            console.log("TRU:", temp_tag_dict);
+            // console.log("TRU:", temp_tag_dict);
             setGotTagDicts(true);
             // setAllTags(website_results.sort((a, b) => b.website_upvotes - a.website_upvotes));
         }
         websiteResults();
     }, [])
-
-    // const tagDictCounter = ({tagName}) => {
-    //     console.log("DDD:", allTags);
-    //     return {name: tagName, value: allTags.reduce((count, currentItem) => (currentItem === tagName ? count + 1 : count), 0)}
-    // }
-
-    // const getAllTagDicts = () => {
-    //     if (gotTagDicts) {
-    //         console.log("NOW DOING THIS:", tagDictCounter(website_categories[0]));
-    //         return allTagDicts;
-    //     }
-    //     website_categories.forEach(tagName => {
-    //         console.log("TAGNAME:", tagName);
-    //         setAllTagDicts(prevTotalTagDicts => [...prevTotalTagDicts, tagDictCounter(tagName)])
-    //     });
-    //     console.log("DID THAT");
-    //     setGotTagDicts(true);
-    //     // console.log("ALL:", allTagDicts);
-    //     return allTagDicts;
-    // }
-
     if (!gotTagDicts || !gotTags) {
-        // getAllTagDicts();
         return (
-            <div>
+            <div className="text-[#ff6a3d]">
                 Loading...
             </div>
         )
@@ -247,6 +237,57 @@ function TagCounter() {
                 Number of Websites with a Specific Tag
             </p>
             <BarChart data={allTagDicts} />
+            <p className="text-sm pl-6">*Does not show tags that have 0 websites</p>
+        </div>
+    )
+}
+
+function VoteGlobalCounter() {
+    const [allUpVotes, setAllUpvotes] = useState(0);
+    const [allDownVotes, setAllDownvotes] = useState(0);
+    const [gotVoteNumbers, setGotVoteNumbers] = useState(false);
+
+    useEffect(() => {
+        async function websiteVoteResults() {
+            if (!gotVoteNumbers) {
+                const website_results = await fetchWebsites();
+                var temp_upvotes = 0
+                var temp_downvotes = 0
+                website_results.forEach(website => {
+                    // setAllUpvotes(prevUpvotes => prevUpvotes + website["website_upvotes"]);
+                    // setAllDownvotes(prevDownvotes => prevDownvotes + website["website_remove_votes"]);
+                    temp_upvotes += website["website_upvotes"]
+                    temp_downvotes += website["website_remove_votes"]
+                })
+                setAllUpvotes(temp_upvotes);
+                setAllDownvotes(temp_downvotes);
+                setGotVoteNumbers(true);
+            }
+        }
+        websiteVoteResults();
+    }, [])
+
+    if (!gotVoteNumbers) {
+        return (
+            <div className="text-[#ff6a3d]">
+                Loading...
+            </div>
+        )
+    }
+    return (
+        <div className="text-[#ff6a3d]">
+            <div className="grid grid-cols-2 gap-x-4 text-3xl">
+                <div className="grid grid-row-2">
+                    <div className="text-6xl">{allUpVotes}</div>
+                    <div>Upvotes</div>
+                </div>
+                <div className="grid grid-row-2">
+                    <div className="text-6xl">{allDownVotes}</div>
+                    <div>Downvotes</div>
+                </div>
+            </div>
+            <PercentageBar percentage={allUpVotes / (allUpVotes + allDownVotes) * 100} />
+            <p className="text-xs">*Stats are based on user votes on the entire website, which includes all websites</p>
         </div>
     )
 }
@@ -261,9 +302,9 @@ export default function Home() {
         <div className="min-h-screen bg-[#1a2238]">
             <div className="container mx-auto px-1 py-2">
                 <div className="flex mb-4 mt-2">
-                    <h1 className="flex-1 text-4xl font-bold text-[#ff6a3d]">Welcome!</h1>
+                    <h1 className="flex-1 text-5xl font-bold text-[#ff6a3d]">Welcome!</h1>
                     <Link key={1} className="flex-1 rounded-lg text-right" href="/">
-                        <p className="font-['Garamond'] text-[#ff6a3d] text-3xl">Main Page</p>
+                        <p className="text-[#059669] text-4xl font-bold">Main Page</p>
                     </Link>
                 </div>
 
@@ -275,7 +316,7 @@ export default function Home() {
                                 collected from the website ranking</p>
 
                             <p className="text-[#1a2238]">If you have any feedback on the website, or have any ideas for features to add to the website,
-                                please type into the textbox below and click on the <span className="font-bold">"Submit Feedback"</span> button at the bottom
+                                please type into the textbox and click on the <span className="font-bold">"Submit Feedback"</span> button at the bottom
                                 of the website.</p>
                         </div>
                         <br />
@@ -283,6 +324,8 @@ export default function Home() {
                     </div>
                     <div className="lg:col-span-3">
                         <TagCounter />
+                        <br />
+                        <VoteGlobalCounter />
                     </div>
                 </div>
 
