@@ -477,6 +477,8 @@ export default function Home() {
               <p className="text-[#1a2238]">Here, you can add the <span className="font-bold">link</span> to any cool websites that you find and  
               <span className="font-bold"> vote</span> on websites that you like or don't like.</p>
 
+              <p className="text-[#1a2238]">You can only vote for a website <span className="font-bold">once</span></p>
+
               <p className="text-[#1a2238]">When adding a website, you can choose <span className="font-bold">tags</span> that represent what content
               is on the website.</p>
 
