@@ -1,6 +1,6 @@
 "use client"
 import { createClient } from '@supabase/supabase-js'
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { GoCheck, GoCheckCircleFill, GoX, GoXCircleFill, GoLink } from "react-icons/go";
 
@@ -226,84 +226,79 @@ function DisplaySingleWebsite({ website_info, idx, onVoteError }) {
   );
 }
 
-async function fetchWebsites() {
-  try {
-    const response = await fetch('/api', {
-      method: "GET",
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch websites');
-    }
-
-    const data = await response.json();
-    // setWebsites(data.data.sort((a, b) => b.website_upvotes - a.website_upvotes));
-    return data.data;
-  } catch (error) {
-    setError("Failed to load websites. Please try again later.");
-  }
-}
-
-// function RecentWebsites() {
-//   const [websites, setWebsites] = useState([]);
-//   const [error, setError] = useState("");
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   useEffect(() => {
-//     async function websiteResults() {
-//       const website_results = await fetchWebsites();
-//       // console.log("DFL", website_results);
-//       setIsLoading(false);
-//       setWebsites(website_results.sort((a, b) => b.website_upvotes - a.website_upvotes).slice(0, Math.min(3, website_results.length)));
-//     }
-//     websiteResults();
-//     // fetchWebsites();
-//   }, []);
-
-//   if (isLoading) {
-//     return <div className="text-center py-4 text-[#ff6a3d]">Loading...</div>;
-//   }
-
-//   function handleVoteError(message) {
-//     setError(message);
-//     // Clear error after 5 seconds
-//     setTimeout(() => setError(""), 5000);
-//   }
-
-//   return (
-//     <div className="h-[80vh] overflow-y-auto pr-2 space-y-2 rounded-lg">
-//       {websites.map((website, idx) => (
-//         <DisplaySingleWebsite
-//           key={website.website_name}
-//           website_info={website}
-//           idx={idx}
-//           onVoteError={handleVoteError}
-//         />
-//       ))}
-//     </div>
-//   );
-// }
-
 function WebsiteList() {
+  const scrollContainerRef = useRef(null);
   const [websites, setWebsites] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const[orderAscending, setOrderAscending] = useState(false);
+
+  const fetchWebsites = useCallback(async (pageNum) => {
+    if (isFetching || !hasMore) return;
+    setIsFetching(true);
+    try {
+      const response = await fetch(`/api?page=${pageNum}&limit=10&ascending=${orderAscending}`, {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch websites');
+      }
+
+      const result = await response.json();
+      const newWebsites = result.data;
+
+      if (newWebsites.length === 0) {
+        setHasMore(false);
+      } else {
+        setWebsites(prev => [...prev, ...newWebsites]);
+        setPage(prev => prev + 1);
+      }
+    } catch (err) {
+      setError("Failed to load websites. Please try again later.");
+    } finally {
+      setIsFetching(false);
+      setIsLoading(false);
+    }
+  }, [isFetching, hasMore]);
+
 
   useEffect(() => {
-    async function websiteResults() {
-      const website_results = await fetchWebsites();
-      // console.log("DFL", website_results);
-      setIsLoading(false);
-      setWebsites(website_results.sort((a, b) => b.website_upvotes - a.website_upvotes));
-    }
-    websiteResults();
-    // fetchWebsites();
+    fetchWebsites(1);
   }, []);
+
+  function handleScrollToBottom() {
+    if (!isFetching && hasMore) {
+      console.log("Fetching next page...");
+      fetchWebsites(page);
+    }
+  }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const container = scrollContainerRef.current;
+      if (container) {
+        // Check if user has scrolled to the bottom (with a small 5px buffer)
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 5) {
+          handleScrollToBottom();
+        }
+      }
+    };
+
+    const container = scrollContainerRef.current;
+    container?.addEventListener('scroll', handleScroll);
+
+    return () => container?.removeEventListener('scroll', handleScroll);
+  }, [websites, isFetching, hasMore]); // Re-attach if dependencies change
 
   const DropdownForm = () => {
     return (
@@ -344,7 +339,7 @@ function WebsiteList() {
       <div className="my-2">
         <DropdownForm />
       </div>
-      <div className="h-[80vh] overflow-y-auto pr-2 space-y-2 rounded-lg">
+      <div ref={scrollContainerRef} className="h-[80vh] overflow-y-auto pr-2 space-y-2 rounded-lg">
         {websites.map((website, idx) => (
           (selectedTag==''||selectedTag=='All Websites' ? true : 
             (website.tags!=null&&website.tags.length>0 ? website.tags.includes(selectedTag) : false)) &&
@@ -355,6 +350,8 @@ function WebsiteList() {
             onVoteError={handleVoteError}
           />
         ))}
+        {isFetching && <div className="text-center py-4 text-[#ff6a3d]">Loading more...</div>}
+        {!hasMore && websites.length > 0 && <div className="text-center py-4 text-slate-400">You've reached the end!</div>}
       </div>
     </div>
   );
@@ -394,26 +391,6 @@ export default function Home() {
     }
 
     return (
-      // <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
-      //   <form id="add_website_form" onSubmit={(e) => { e.preventDefault(); submit_form() }} className="space-y-4">
-      //     <div>
-      //       <label className="font-semibold text-[#ff6a3d] block mb-2" htmlFor="name">Website URL to Add</label>
-      //       <input
-      //         className="border-2 border-[#1a2238] rounded p-3 w-full focus:border-[#ff6a3d] focus:ring-[#ff6a3d]"
-      //         type="text"
-      //         name="name"
-      //         id="name"
-      //         required
-      //       />
-      //     </div>
-      //     <button
-      //       type="submit"
-      //       className="bg-[#ff6a3d] text-white px-6 py-2 rounded hover:bg-[#ff6a3d]/80 transition-colors duration-150"
-      //     >
-      //       Add Website
-      //     </button>
-      //   </form>
-      // </div>
       <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
         <form id="add_website_form" onSubmit={(e) => { e.preventDefault(); submit_form() }} className="space-y-4">
           <div>

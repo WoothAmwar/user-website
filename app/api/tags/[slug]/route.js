@@ -23,7 +23,7 @@ export async function GET(req, { params}) {
         .from('Websites')
         .select('tags, website_name')
         .eq('website_name', website_url)
-    console.log("GET DTA:", data);
+    // console.log("GET DTA:", data);
     // console.log("GET ERR:", error);
     return Response.json({ "data": data }, {
         status: 200

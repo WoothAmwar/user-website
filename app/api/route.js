@@ -42,14 +42,25 @@ const valid_website = ({website_name}) => {
 }
 
 export async function GET(req) {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const ascendingUpvotes = searchParams.get('ascending')=='true';
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit - 1;
+
     const supabase = await createClient();
     var { data, error } = await supabase
         .from('Websites')
         .select()
+        .order('website_upvotes', { ascending: ascendingUpvotes })
+        .order('created_at', { ascending: false })
+        .range(startIndex, endIndex)
+
     // console.log("GET DTA:", data);
     // console.log("GET ERR:", error);
     return Response.json({ "data": data }, {
         status: 200
     });
 }
-
