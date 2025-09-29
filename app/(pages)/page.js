@@ -1,494 +1,541 @@
-"use client"
-import { createClient } from '@supabase/supabase-js'
-import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
-import { GoCheck, GoCheckCircleFill, GoX, GoXCircleFill, GoLink } from "react-icons/go";
+"use client";
 
-const website_categories = ['Personal Website', 'Entertainment', 'Mainstream', 'Technology', 'Education', 'Sports'];
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GoCheck, GoCheckCircleFill, GoChevronDown, GoLink, GoPlus, GoX, GoXCircleFill } from "react-icons/go";
+import { FeedbackForm } from "@/app/components/FeedbackForm";
 
-// function sort_websites_by_upvotes(a, b) {
-//   if (a["website_upvotes"] < b["website_upvotes"]) {
-//     return 1;
-//   }
-//   if (a["website_upvotes"] > b["website_upvotes"]) {
-//     return -1;
-//   }
-//   return 0;
-// }
+const websiteCategories = [
+  "Personal Website",
+  "Entertainment",
+  "Mainstream",
+  "Technology",
+  "Education",
+  "Sports",
+];
 
-function FeedbackForm() {
-  const [gaveFeedback, setGaveFeedback] = useState(false);
-  const [feedbackContent, setFeedbackContent] = useState("");
+function AddWebsiteCard() {
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState("success");
+  const [urlValue, setUrlValue] = useState("");
 
-  async function submit_form() {
-    var form_data = new FormData(document.getElementById("feedback_form"));
-    const feedback = form_data.get("feedback");
+  function toggleTag(tag) {
+    setSelectedTags((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((item) => item !== tag);
+      }
+      return prev.concat(tag);
+    });
+  }
 
-    // console.log("Days:", days_since_date(form_data.get("airing_date")));
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setStatusMessage("");
+    setStatusType("success");
+
+    const trimmedUrl = urlValue.trim();
 
     try {
-      const response = await fetch("/api/feedback", {
+      const response = await fetch("/api", {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          feedback_content: feedback,
-        })
+          name: trimmedUrl,
+          tags: selectedTags,
+        }),
       });
-      setFeedbackContent(feedback);
-      setGaveFeedback(true);
+
+      if (!response.ok) {
+        throw new Error("Unable to share that link right now.");
+      }
+
+      const data = await response.json();
+      if (data && data.data && data.data.valid === 1) {
+        setStatusType("success");
+        setStatusMessage("Thanks! Your link was shared with the community.");
+        setUrlValue("");
+        setSelectedTags([]);
+      } else {
+        setStatusType("error");
+        setStatusMessage("That link could not be added. Please try again.");
+      }
     } catch (error) {
-      console.log("Error giving feedback:", error);
+      setStatusType("error");
+      setStatusMessage(error.message || "Something went wrong. Try again later.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
-    <div className="mt-2 bg-white rounded-lg shadow-lg p-4">
-      {gaveFeedback ? (
-        <div className="text-[#ff6a3d]">
-          Received Feedback: <strong>{feedbackContent}</strong>
-        </div>
-      ) : (
-        <div>
-          <form id="feedback_form" onSubmit={(e) => { e.preventDefault(); submit_form() }}>
-            <label className="font-semibold text-[#ff6a3d]" htmlFor="feedback">Feedback For This Website: </label>
-            <input
-              className="border-2 border-[#1a2238] rounded p-3 w-full mt-2 mb-4 focus:border-[#ff6a3d] focus:ring-[#ff6a3d]"
-              type="text"
-              name="feedback"
-              id="feedback"
-              required
-            />
+    <section className="rounded-3xl border border-theme-border bg-theme-surface p-6 shadow-surface">
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <div className="flex items-center gap-3 text-theme-subtle">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-theme-border bg-theme-input text-lg text-theme-text">
+              <GoPlus />
+            </span>
+            <div>
+              <h2 className="text-xl font-semibold text-theme-text">Share a Link</h2>
+              <p className="text-sm text-theme-subtle">Paste a URL and add optional tags so others can discover it.</p>
+            </div>
+          </div>
+        </header>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-1 items-center gap-3 rounded-2xl border border-theme-border bg-theme-input px-4 py-3">
+              <input
+                className="w-full bg-transparent text-sm text-theme-text placeholder:text-theme-subtle focus:outline-none"
+                type="text"
+                name="name"
+                placeholder="Paste a URL to share..."
+                value={urlValue}
+                onChange={(event) => setUrlValue(event.target.value)}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
             <button
               type="submit"
-              className="bg-[#ff6a3d] text-white px-4 py-2 rounded hover:bg-[#ff6a3d]/80 transition-colors duration-150"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-2xl bg-theme-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-theme-primaryHover disabled:opacity-60"
             >
-              Submit Feedback
+              {isSubmitting ? "Sharing..." : "Share"}
             </button>
-          </form>
-        </div>
-      )}
-    </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-theme-subtle">Add tags (optional)</p>
+            <div className="flex flex-wrap gap-2">
+              {websiteCategories.map((category) => {
+                const isActive = selectedTags.includes(category);
+                const baseClasses = "cursor-pointer rounded-full border border-theme-border px-4 py-2 text-xs font-semibold transition-colors";
+                const activeClasses = "bg-theme-primary text-white";
+                const inactiveClasses = "bg-theme-muted text-theme-tagText hover:border-theme-primary";
+                const badgeClasses = [
+                  baseClasses,
+                  isActive ? activeClasses : inactiveClasses,
+                ].join(" ");
+
+                return (
+                  <label key={category} className={badgeClasses}>
+                    <input
+                      type="checkbox"
+                      name="categories"
+                      value={category}
+                      checked={isActive}
+                      onChange={() => toggleTag(category)}
+                      className="sr-only"
+                    />
+                    {category}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {statusMessage && (
+            <div
+              className={[
+                "rounded-2xl px-4 py-3 text-sm",
+                statusType === "success"
+                  ? "border border-theme-border bg-theme-surfaceMuted text-theme-text"
+                  : "border border-theme-danger/40 bg-theme-surfaceMuted text-theme-danger",
+              ].join(" ")}
+            >
+              {statusMessage}
+            </div>
+          )}
+        </form>
+      </div>
+    </section>
   );
 }
 
-
-function DisplaySingleWebsite({ website_info, idx, onVoteError }) {
+function DisplaySingleWebsite({ websiteInfo, index, onVoteError }) {
   const [websiteUpvotes, setWebsiteUpvotes] = useState(0);
   const [websiteDownvotes, setWebsiteDownvotes] = useState(0);
   const [votedUp, setVotedUp] = useState(false);
   const [votedDown, setVotedDown] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [isVoting, setIsVoting] = useState(false);
-  const [websiteTag, setWebsiteTag] = useState("");
   const [websiteUserTags, setUserTags] = useState([]);
+  const lastFetchedSlug = useRef("");
 
   useEffect(() => {
-    setWebsiteUpvotes(website_info.website_upvotes);
-    setWebsiteDownvotes(website_info.website_remove_votes);
-    setWebsiteUrl(website_info.website_name.includes("https")
-      ? website_info.website_name
-      : `https://${website_info.website_name}`
-    );
-  }, [website_info]);
+    setWebsiteUpvotes(websiteInfo.website_upvotes);
+    setWebsiteDownvotes(websiteInfo.website_remove_votes);
+    if (websiteInfo.website_name && websiteInfo.website_name.indexOf("https") !== -1) {
+      setWebsiteUrl(websiteInfo.website_name);
+    } else {
+      setWebsiteUrl("https://" + websiteInfo.website_name);
+    }
+  }, [websiteInfo]);
 
   useEffect(() => {
+    const slug = websiteInfo.website_name || "";
+    if (!slug || lastFetchedSlug.current === slug) {
+      return;
+    }
+
+    lastFetchedSlug.current = slug;
+
     async function getWebsiteTags() {
       try {
-        const response = await fetch(`/api/tags/${website_info.website_name.split("/").join("|||")}`, {
+        const encodedName = encodeURIComponent(slug.split("/").join("|||"));
+        const response = await fetch("/api/tags/" + encodedName, {
           method: "GET",
           headers: {
-            'Content-Type': 'application/json',
-          }
-          // credentials: 'include' // Important for sending cookies
+            "Content-Type": "application/json",
+          },
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Vote failed');
+          throw new Error("Tags unavailable");
         }
+
         const data = await response.json();
-        // console.log("DTA 3:", data["data"][0]["tags"]);
-        setUserTags(data["data"][0]["tags"])
-      } catch (err) {
-        console.log("Error getting user tags for website:", err)
+        if (data && data.data && data.data[0] && data.data[0].tags) {
+          setUserTags(prev => [...prev, ...data.data[0].tags]);
+        }
+      } catch (error) {
+        console.warn("Error getting user tags for website:", error);
       }
     }
 
     getWebsiteTags();
-  }, [])
 
-  async function buttonVoteChange(vote_type) {
-    if (isVoting || (votedUp && vote_type === "upvote") || (votedDown && vote_type === "downvote")) {
+  }, [websiteInfo.website_name]);
+
+  async function buttonVoteChange(voteType) {
+    if (
+      isVoting ||
+      (votedUp && voteType === "upvote") ||
+      (votedDown && voteType === "downvote")
+    ) {
       return;
     }
 
     setIsVoting(true);
 
     try {
-      const response = await fetch(`/api/voting/${vote_type}`, {
+      const response = await fetch("/api/voting/" + voteType, {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           current_upvotes: websiteUpvotes,
           current_downvotes: websiteDownvotes,
-          website_name: website_info.website_name,
+          website_name: websiteInfo.website_name,
         }),
-        credentials: 'include' // Important for sending cookies
+        credentials: "include",
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Vote failed');
+        throw new Error("Vote failed");
       }
 
-      // Update local state only after successful vote
-      if (vote_type === "upvote") {
+      if (voteType === "upvote") {
         setVotedUp(true);
-        setWebsiteUpvotes(prev => prev + 1);
+        setWebsiteUpvotes(function (prev) {
+          return prev + 1;
+        });
       } else {
         setVotedDown(true);
-        setWebsiteDownvotes(prev => prev + 1);
+        setWebsiteDownvotes(function (prev) {
+          return prev + 1;
+        });
       }
-
     } catch (error) {
-      // Revert any optimistic updates
-      if (vote_type === "upvote") {
+      if (voteType === "upvote") {
         setVotedUp(false);
-        setWebsiteUpvotes(website_info.website_upvotes);
+        setWebsiteUpvotes(websiteInfo.website_upvotes);
       } else {
         setVotedDown(false);
-        setWebsiteDownvotes(website_info.website_remove_votes);
+        setWebsiteDownvotes(websiteInfo.website_remove_votes);
       }
 
-      // Show error message
       onVoteError(error.message);
     } finally {
       setIsVoting(false);
     }
   }
 
+  const upvoteButtonClasses = [
+    "flex h-10 w-10 items-center justify-center rounded-full border border-theme-border transition-colors",
+    votedUp ? "bg-theme-primary text-white" : "text-theme-subtle hover:text-theme-text",
+    isVoting ? "opacity-60" : "",
+  ].join(" ");
+
+  const downvoteButtonClasses = [
+    "flex h-10 w-10 items-center justify-center rounded-full border border-theme-border transition-colors",
+    votedDown ? "text-theme-danger" : "text-theme-subtle hover:text-theme-text",
+    isVoting ? "opacity-60" : "",
+  ].join(" ");
+
   return (
-    <div className="bg-white rounded-lg p-3 shadow-md hover:shadow-lg transition-shadow duration-200">
-      <div className="grid grid-cols-2 grid-rows-4 lg:grid-rows-1 lg:grid-cols-6 md:grid-cols-4 md:grid-rows-2 grid-flow-col gap-2 items-center">
-        <div className="col-span-1 text-[#ff6a3d]">
-          <div className="grid grid-cols-2 gap-1 items-center">
-            <div className="font-semibold">
-              #{idx + 1}
-            </div>
-            <div>
-              {websiteTag}
-            </div>
+    <article className="rounded-2xl border border-theme-border bg-theme-surfaceMuted px-4 py-4 transition-colors hover:border-theme-primary/60">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3 sm:flex-1">
+          <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-xl border border-theme-border bg-theme-surface text-sm font-semibold text-theme-subtle">
+            {"#" + (index + 1)}
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <a
+              className="flex items-center gap-2 text-sm font-semibold text-theme-text hover:text-theme-primary"
+              href={websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="text-lg text-theme-primary">
+                <GoLink />
+              </span>
+              <span className="truncate">{websiteUrl}</span>
+            </a>
+            {websiteUserTags && websiteUserTags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {websiteUserTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-theme-muted px-3 py-1 text-xs font-medium text-theme-tagText"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-        <div className="col-span-4">
-          <div className="grid grid-rows-2">
-            <div>
-              <a
-                className="text-[#ff6a3d] hover:text-[#ff6a3d]/80 flex items-center gap-2"
-                href={websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {websiteUrl}
-                <GoLink className="inline-block" />
-              </a>
-            </div>
-            <div className="text-[#A3A3A3] text-sm">
-                {websiteUserTags != null ? websiteUserTags.join(", ") : []}
-            </div>
-          </div>
-        </div>
-        <div className="col-span-1 flex items-center justify-end pr-1">
-          <div className={`text-[#1a2238] font-medium mr-2 ${websiteUpvotes > 9 ? 'text-base' : 'text-base'}`}>{websiteUpvotes} Votes</div>
-          <div className="flex gap-1">
-            <button
-              className={`text-xl hover:text-[#ff6a3d] transition-colors ${isVoting ? 'opacity-50 cursor-not-allowed' : ''} ${votedUp ? 'text-[#ff6a3d]' : 'text-[#1a2238]'}`}
-              onClick={() => buttonVoteChange("upvote")}
-              disabled={isVoting || votedUp}
-            >
-              {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
-            </button>
-            <button
-              className={`text-xl hover:text-red-500 transition-colors ${isVoting ? 'opacity-50 cursor-not-allowed' : ''} ${votedDown ? 'text-red-500' : 'text-[#1a2238]'}`}
-              onClick={() => buttonVoteChange("downvote")}
-              disabled={isVoting || votedDown}
-            >
-              {votedDown ? <GoXCircleFill /> : <GoX />}
-            </button>
-          </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <span className="rounded-full border border-theme-border bg-theme-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-theme-subtle">
+            {websiteUpvotes + " votes"}
+          </span>
+          <button
+            className={upvoteButtonClasses}
+            onClick={() => buttonVoteChange("upvote")}
+            disabled={isVoting || votedUp}
+            aria-label="Upvote"
+          >
+            {votedUp ? <GoCheckCircleFill /> : <GoCheck />}
+          </button>
+          <button
+            className={downvoteButtonClasses}
+            onClick={() => buttonVoteChange("downvote")}
+            disabled={isVoting || votedDown}
+            aria-label="Downvote"
+          >
+            {votedDown ? <GoXCircleFill /> : <GoX />}
+          </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
 function WebsiteList() {
   const scrollContainerRef = useRef(null);
+  const hasLoadedInitial = useRef(false);
   const [websites, setWebsites] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedTag, setSelectedTag] = useState("All Websites");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
-  const[orderAscending, setOrderAscending] = useState(false);
-
-  const fetchWebsites = useCallback(async (pageNum) => {
-    if (isFetching || !hasMore) return;
-    setIsFetching(true);
-    try {
-      const response = await fetch(`/api?page=${pageNum}&limit=10&ascending=${orderAscending}`, {
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch websites');
+  const fetchWebsites = useCallback(
+    async function (pageNumber) {
+      if (isFetching || !hasMore) {
+        return;
       }
 
-      const result = await response.json();
-      const newWebsites = result.data;
+      setIsFetching(true);
 
-      if (newWebsites.length === 0) {
-        setHasMore(false);
-      } else {
-        setWebsites(prev => [...prev, ...newWebsites]);
-        setPage(prev => prev + 1);
+      try {
+        const params = new URLSearchParams({
+          page: String(pageNumber),
+          limit: "10",
+          ascending: "false",
+        });
+
+        const response = await fetch("/api?" + params.toString(), {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch websites");
+        }
+
+        const result = await response.json();
+        const newWebsites = result.data || [];
+
+        if (newWebsites.length === 0) {
+          setHasMore(false);
+        } else {
+          setWebsites(function (prev) {
+            return prev.concat(newWebsites);
+          });
+          setPage(function (prev) {
+            return prev + 1;
+          });
+        }
+      } catch (err) {
+        setError("Failed to load websites. Please try again later.");
+      } finally {
+        setIsFetching(false);
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError("Failed to load websites. Please try again later.");
-    } finally {
-      setIsFetching(false);
-      setIsLoading(false);
-    }
-  }, [isFetching, hasMore]);
-
+    },
+    [hasMore, isFetching]
+  );
 
   useEffect(() => {
+    if (hasLoadedInitial.current) {
+      return;
+    }
+    hasLoadedInitial.current = true;
     fetchWebsites(1);
-  }, []);
+  }, [fetchWebsites]);
 
-  function handleScrollToBottom() {
+  const handleScrollToBottom = useCallback(() => {
     if (!isFetching && hasMore) {
-      console.log("Fetching next page...");
       fetchWebsites(page);
     }
-  }
+  }, [fetchWebsites, hasMore, isFetching, page]);
 
   useEffect(() => {
-    const handleScroll = () => {
+    function handleScroll() {
       const container = scrollContainerRef.current;
-      if (container) {
-        // Check if user has scrolled to the bottom (with a small 5px buffer)
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 5) {
-          handleScrollToBottom();
-        }
+      if (container && container.scrollTop + container.clientHeight >= container.scrollHeight - 5) {
+        handleScrollToBottom();
       }
-    };
+    }
 
     const container = scrollContainerRef.current;
-    container?.addEventListener('scroll', handleScroll);
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+    }
 
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, [websites, isFetching, hasMore]); // Re-attach if dependencies change
-
-  const DropdownForm = () => {
-    return (
-      <select
-        value={selectedTag}
-        onChange={(e) => {
-          setSelectedTag(e.target.value)
-        }}
-        className="w-full p-2 border rounded-lg"
-      >
-        <option value="" disabled>Select Tag Filter</option>
-        {['All Websites'].concat(website_categories).map(option => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    );
-  };
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [handleScrollToBottom]);
 
   function handleVoteError(message) {
     setError(message);
-    // Clear error after 5 seconds
-    setTimeout(() => setError(""), 5000);
+    window.setTimeout(function () {
+      setError("");
+    }, 5000);
   }
 
-  if (isLoading) {
-    return <div className="text-center py-4 text-[#ff6a3d]">Loading...</div>;
-  }
+  const filteredWebsites = websites.filter(function (website) {
+    if (!selectedTag || selectedTag === "All Websites") {
+      return true;
+    }
+    if (!website.tags || website.tags.length === 0) {
+      return false;
+    }
+    return website.tags.includes(selectedTag);
+  });
 
   return (
-    <div className="my-2">
+    <section className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-theme-text">Discover Links</h2>
+          <p className="text-sm text-theme-subtle">Explore what others are sharing and find your next favorite site.</p>
+        </div>
+        <div className="relative w-full sm:w-56">
+          <select
+            value={selectedTag}
+            onChange={(event) => setSelectedTag(event.target.value)}
+            className="w-full appearance-none rounded-2xl border border-theme-border bg-theme-input px-4 py-3 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
+          >
+            {[
+              "All Websites",
+              "Personal Website",
+              "Entertainment",
+              "Mainstream",
+              "Technology",
+              "Education",
+              "Sports",
+            ].map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <GoChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-theme-subtle" />
+        </div>
+      </div>
+
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+        <div className="rounded-2xl border border-theme-danger/40 bg-theme-surfaceMuted px-4 py-3 text-sm text-theme-danger">
           {error}
         </div>
       )}
-      <div className="my-2">
-        <DropdownForm />
+
+      <div className="rounded-3xl border border-theme-border bg-theme-surface p-4 shadow-surface">
+        <div
+          ref={scrollContainerRef}
+          className="max-h-[540px] space-y-3 overflow-y-auto pr-2"
+        >
+          {isLoading && (
+            <div className="py-12 text-center text-sm text-theme-subtle">Loading links...</div>
+          )}
+
+          {!isLoading && filteredWebsites.length === 0 && (
+            <div className="py-12 text-center text-sm text-theme-subtle">
+              No links match this tag yet. Be the first to share one!
+            </div>
+          )}
+
+          {filteredWebsites.map((website, idx) => (
+            <DisplaySingleWebsite
+              key={website.website_name + idx}
+              websiteInfo={website}
+              index={idx}
+              onVoteError={handleVoteError}
+            />
+          ))}
+
+          {isFetching && !isLoading && (
+            <div className="py-4 text-center text-sm text-theme-subtle">Loading more...</div>
+          )}
+
+          {!hasMore && websites.length > 0 && (
+            <div className="py-4 text-center text-xs text-theme-subtle">You have reached the end of the list.</div>
+          )}
+        </div>
       </div>
-      <div ref={scrollContainerRef} className="h-[80vh] overflow-y-auto pr-2 space-y-2 rounded-lg">
-        {websites.map((website, idx) => (
-          (selectedTag==''||selectedTag=='All Websites' ? true : 
-            (website.tags!=null&&website.tags.length>0 ? website.tags.includes(selectedTag) : false)) &&
-          <DisplaySingleWebsite
-            key={website.website_name}
-            website_info={website}
-            idx={idx}
-            onVoteError={handleVoteError}
-          />
-        ))}
-        {isFetching && <div className="text-center py-4 text-[#ff6a3d]">Loading more...</div>}
-        {!hasMore && websites.length > 0 && <div className="text-center py-4 text-slate-400">You've reached the end!</div>}
-      </div>
-    </div>
+    </section>
   );
 }
 
 export default function Home() {
-  const [addedWebsite, setAddedWebsite] = useState(false);
-  const [votedTicker, setVotedTicker] = useState(0);
-
-  function AddWebsite() {
-    // const website_categories = ['Personal Website', 'Entertainment', 'Mainstream', 'Technology', 'Education', 'Sports'];
-    async function submit_form() {
-      var form_data = new FormData(document.getElementById("add_website_form"));
-      const name = form_data.get("name");
-      const website_tags = form_data.getAll("categories")
-
-      // console.log("Days:", days_since_date(form_data.get("airing_date")));
-
-      try {
-        const response = await fetch("/api", {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: name,
-            tags: website_tags
-          })
-        });
-        const raw_data = await response.json();
-        if (raw_data["data"]["valid"] == 1) {
-          setAddedWebsite(true);
-        }
-      } catch (error) {
-        console.log("Error adding website:", error);
-      }
-    }
-
-    return (
-      <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
-        <form id="add_website_form" onSubmit={(e) => { e.preventDefault(); submit_form() }} className="space-y-4">
-          <div>
-            <label className="font-semibold text-[#ff6a3d] block mb-2" htmlFor="name">Website URL to Add</label>
-            <input
-              className="border-2 border-[#1a2238] rounded p-3 w-full focus:border-[#ff6a3d] focus:ring-[#ff6a3d]"
-              type="text"
-              name="name"
-              id="name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="font-semibold text-[#ff6a3d] block mb-2">Tags for the Website(Optional)</label>
-            <div className="flex flex-wrap gap-4">
-              {website_categories.map((category) => (
-                <label key={category} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="categories"
-                    value={category}
-                    className="rounded border-[#1a2238] text-[#ff6a3d] focus:ring-[#ff6a3d]"
-                  />
-                  <span>{category}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="bg-[#ff6a3d] text-white px-6 py-2 rounded hover:bg-[#ff6a3d]/80 transition-colors duration-150"
-          >
-            Add Website
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   useEffect(() => {
-    document.title = `Website Ranker`;
-  }, [])
+    document.title = "LinkPluck";
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#1a2238]">
-      <div className="container mx-auto px-1 py-2">
-        <div className="flex mb-4 mt-2">
-          <h1 className="flex-1 text-5xl font-bold text-[#ff6a3d]">Welcome!</h1>
-          <p className="text-xl text-[#ff6a3d]">Website for Hack Club Highseas</p>
-          <Link key={1} className="flex-1 rounded-lg text-right" href="/data">
-              <p className="text-[#059669] text-4xl font-bold">Data Page</p>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-4 space-y-4">
-              <p className="text-[#1a2238]">Here, you can add the <span className="font-bold">link</span> to any cool websites that you find and  
-              <span className="font-bold"> vote</span> on websites that you like or don't like.</p>
-
-              <p className="text-[#1a2238]">You can only vote for a website <span className="font-bold">once</span></p>
-
-              <p className="text-[#1a2238]">When adding a website, you can choose <span className="font-bold">tags</span> that represent what content
-              is on the website.</p>
-
-              <p className="font-bold text-red-600">If you get the error "Invalid Token", try reloading the page</p>
-
-              <p className="text-[#1a2238]">If a website gets enough down votes, it will be removed from the list</p>
-
-              <p className="text-[#1a2238]">For Websites you Do Like, click the Check Mark next to the website name</p>
-
-              <p className="text-[#1a2238]">For Websites you Do Not Like, click the X Mark next to the website name</p>
-
-              <p className="text-[#1a2238]">Check out the <span className="font-bold text-[#059669]">Data</span> page for some statistics.</p>
-
-              <p className="text-[#1a2238]">If you have any feedback on the website, or have any ideas for features to add to the website,
-                please type into the textbox and click on the <span className="font-bold">"Submit Feedback"</span> button at the bottom 
-                of the website.</p>
-            </div>
-             <br />
-            {/* <RecentWebsites /> */}
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <AddWebsite />
-            <WebsiteList />
-          </div>
-        </div>
-
-        {/* Feedback Form */}
-        <div className="pt-2">
-          <FeedbackForm />
-        </div>
-      </div>
+    <div className="flex flex-col gap-8 py-10">
+      <AddWebsiteCard />
+      <WebsiteList />
+      <FeedbackForm className="mt-4" />
     </div>
   );
 }
