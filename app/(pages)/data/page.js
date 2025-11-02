@@ -227,7 +227,7 @@ function TagCounter() {
         <p className="text-sm text-theme-subtle">See which topics have the most submissions across LinkPluck.</p>
       </div>
       <BarChart data={tagData} />
-      <p className="text-xs text-theme-subtle">*Only websites loaded up on the homepage appear here, not all websites submitted.</p>
+      {/* <p className="text-xs text-theme-subtle">*Only websites loaded up on the homepage appear here, not all websites submitted.</p> */}
       <p className="text-xs text-theme-subtle">*Only tags applied to at least one website appear in this chart.</p>
     </section>
   );
@@ -298,7 +298,7 @@ function VoteGlobalCounter() {
         </div>
       </div>
       <PercentageBar percentage={approval} />
-      <p className="text-xs text-theme-subtle">*Stats include every website currently listed.</p>
+      {/* <p className="text-xs text-theme-subtle">*Stats include every website currently listed.</p> */}
     </section>
   );
 }
@@ -313,8 +313,8 @@ export default function DataPage() {
       <section className="rounded-3xl border border-theme-border bg-theme-surface p-8 shadow-surface">
         <h1 className="text-3xl font-semibold text-theme-text">Community Insights</h1>
         <p className="mt-3 text-sm text-theme-subtle">
-          Explore how LinkPluck is growing. Tag trends highlight what the community cares about, while vote totals show
-          which submissions resonate most. Use these insights to guide your next contribution.
+          Explore how LinkPluck is growing. Tag trends highlight what types of websites are most popular, while vote totals show
+          how the community feels about the agregate websites.
         </p>
       </section>
 

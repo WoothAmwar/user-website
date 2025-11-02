@@ -238,7 +238,7 @@ function DisplaySingleWebsite({ websiteInfo, index, onVoteError }) {
       });
 
       if (!response.ok) {
-        throw new Error("Vote failed");
+        throw new Error("Vote failed - You probably already voted for that website");
       }
 
       if (voteType === "upvote") {

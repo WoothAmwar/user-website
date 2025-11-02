@@ -51,11 +51,10 @@ export default function AboutPage() {
         <div className="space-y-3">
           <h2 className="text-xl font-semibold text-theme-text">Need help?</h2>
           <p className="text-sm text-theme-subtle">
-            If you run into issues or have ideas for new features, drop us a quick note. Feedback notifications keep us
-            on track as we evolve the experience.
+            If you run into issues or have ideas for new features, drop a quick note so I can improve the experience.
           </p>
           <p className="text-sm text-theme-subtle">
-            Experiencing token errors? Refresh the page and try again&mdash;your vote or submission will be ready to go.
+            Experiencing errors? Refresh the page and try again&mdash;your vote or submission will be ready to go.
           </p>
         </div>
       </section>

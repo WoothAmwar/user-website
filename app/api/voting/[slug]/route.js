@@ -53,7 +53,8 @@ async function getUserIdentifier(req) {
 
 export async function POST(req, { params }) {
   try {
-    const vote_type = await params?.slug // Either upvote or downvote
+    const final_params = await params;
+    const vote_type = await final_params?.slug // Either upvote or downvote
     const request_data = await req.json()
     const supabase = await createClient()
     const downvotes_to_remove = 10

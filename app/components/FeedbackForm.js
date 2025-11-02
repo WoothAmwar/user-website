@@ -47,7 +47,7 @@ export function FeedbackForm({ className = "" }) {
         <div>
           <h3 className="text-lg font-semibold text-theme-text">Share Feedback</h3>
           <p className="text-sm text-theme-subtle">
-            Have ideas or suggestions? Let us know so we can make LinkPluck better.
+            Have ideas or suggestions? Let me know so I can make LinkPluck better.
           </p>
         </div>
 
