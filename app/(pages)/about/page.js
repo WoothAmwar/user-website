@@ -44,8 +44,8 @@ export default function AboutPage() {
           <h2 className="text-xl font-semibold text-theme-text">How it works</h2>
           <p className="text-sm text-theme-subtle">
             Add a link, choose the tags that describe it best, and press share. Each visitor can vote once per link, so
-            quality content rises to the top. Curious about trends? The Data page surfaces community activity and tag
-            insights.
+            quality content rises to the top. If a website gets enough downvotes, it will be removed.
+            Curious about trends? The Data page surfaces community activity and tag insights.
           </p>
         </div>
         <div className="space-y-3">

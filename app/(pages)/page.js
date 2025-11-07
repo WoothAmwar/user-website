@@ -166,6 +166,7 @@ function DisplaySingleWebsite({ websiteInfo, index, onVoteError }) {
   const [isVoting, setIsVoting] = useState(false);
   const [websiteUserTags, setUserTags] = useState([]);
   const lastFetchedSlug = useRef("");
+  var websiteAddedDate = new Date(websiteInfo.created_at);
 
   useEffect(() => {
     setWebsiteUpvotes(websiteInfo.website_upvotes);
@@ -315,9 +316,14 @@ function DisplaySingleWebsite({ websiteInfo, index, onVoteError }) {
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <span className="rounded-full border border-theme-border bg-theme-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-theme-subtle">
-            {websiteUpvotes + " votes"}
-          </span>
+          <div>
+            <span className="rounded-full border border-theme-border bg-theme-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-theme-subtle">
+              {websiteUpvotes + " votes"}
+            </span>
+            <span className="rounded-full border border-theme-border bg-theme-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-theme-subtle">
+              {websiteAddedDate.toDateString()}
+            </span>
+          </div>
           <button
             className={upvoteButtonClasses}
             onClick={() => buttonVoteChange("upvote")}
@@ -342,7 +348,10 @@ function DisplaySingleWebsite({ websiteInfo, index, onVoteError }) {
 
 function WebsiteList() {
   const scrollContainerRef = useRef(null);
-  const hasLoadedInitial = useRef(false);
+  const isFetchingRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const pendingFetchRef = useRef(null);
+  const sortRef = useRef("Top");
   const [websites, setWebsites] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -350,20 +359,26 @@ function WebsiteList() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
+  const [sortBy, setSortBy] = useState("Top");  // Default value is Top
 
   const fetchWebsites = useCallback(
-    async function (pageNumber) {
-      if (isFetching || !hasMore) {
+    async function (pageNumber, options = {}) {
+      const { replace = false, force = false } = options;
+      const requestedSort = sortBy;
+
+      if (!force && (isFetchingRef.current || !hasMoreRef.current)) {
         return;
       }
 
       setIsFetching(true);
+      isFetchingRef.current = true;
 
       try {
         const params = new URLSearchParams({
           page: String(pageNumber),
           limit: "10",
-          ascending: "false",
+          ascending: sortBy=="Top",
+          newest: sortBy=="Newest"
         });
 
         const response = await fetch("/api?" + params.toString(), {
@@ -380,10 +395,18 @@ function WebsiteList() {
 
         const result = await response.json();
         const newWebsites = result.data || [];
+        if (sortRef.current !== requestedSort) {
+          return;
+        }
 
-        if (newWebsites.length === 0) {
-          setHasMore(false);
-        } else {
+        if (replace) {
+          setWebsites(newWebsites);
+          if (newWebsites.length > 0) {
+            setPage(pageNumber + 1);
+          } else {
+            setPage(pageNumber);
+          }
+        } else if (newWebsites.length > 0) {
           setWebsites(function (prev) {
             return prev.concat(newWebsites);
           });
@@ -391,23 +414,51 @@ function WebsiteList() {
             return prev + 1;
           });
         }
+
+        if (newWebsites.length === 0) {
+          setHasMore(false);
+          hasMoreRef.current = false;
+        } else if (replace) {
+          setHasMore(true);
+          hasMoreRef.current = true;
+        }
       } catch (err) {
         setError("Failed to load websites. Please try again later.");
       } finally {
         setIsFetching(false);
-        setIsLoading(false);
+        isFetchingRef.current = false;
+        if (pendingFetchRef.current) {
+          const { pageNumber: nextPage, options: nextOptions } = pendingFetchRef.current;
+          pendingFetchRef.current = null;
+          fetchWebsites(nextPage, nextOptions);
+        } else {
+          setIsLoading(false);
+        }
       }
     },
-    [hasMore, isFetching]
+    [sortBy]
   );
 
   useEffect(() => {
-    if (hasLoadedInitial.current) {
-      return;
-    }
-    hasLoadedInitial.current = true;
-    fetchWebsites(1);
-  }, [fetchWebsites]);
+    const resetAndFetch = () => {
+      setIsLoading(true);
+      setWebsites([]);
+      setPage(1);
+      setHasMore(true);
+      hasMoreRef.current = true;
+      sortRef.current = sortBy;
+
+      const options = { replace: true, force: true };
+      if (isFetchingRef.current) {
+        pendingFetchRef.current = { pageNumber: 1, options };
+        return;
+      }
+
+      fetchWebsites(1, options);
+    };
+
+    resetAndFetch();
+  }, [fetchWebsites, sortBy]);
 
   const handleScrollToBottom = useCallback(() => {
     if (!isFetching && hasMore) {
@@ -442,6 +493,16 @@ function WebsiteList() {
     }, 5000);
   }
 
+  const orderWebsites = (websites) => {
+    const orderedList = [...websites];
+    if (sortBy === "Top") {
+      return orderedList.sort((a, b) => b.website_upvotes - a.website_upvotes);
+    } else if (sortBy === "Newest") {
+      return orderedList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return orderedList;
+  }
+
   const filteredWebsites = websites.filter(function (website) {
     if (!selectedTag || selectedTag === "All Websites") {
       return true;
@@ -449,6 +510,7 @@ function WebsiteList() {
     if (!website.tags || website.tags.length === 0) {
       return false;
     }
+    // console.log("WEB:", website);
     return website.tags.includes(selectedTag);
   });
 
@@ -459,27 +521,48 @@ function WebsiteList() {
           <h2 className="text-2xl font-semibold text-theme-text">Discover Links</h2>
           <p className="text-sm text-theme-subtle">Explore what others are sharing and find your next favorite site.</p>
         </div>
-        <div className="relative w-full sm:w-56">
-          <select
-            value={selectedTag}
-            onChange={(event) => setSelectedTag(event.target.value)}
-            className="w-full appearance-none rounded-2xl border border-theme-border bg-theme-input px-4 py-3 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
-          >
-            {[
-              "All Websites",
-              "Personal Website",
-              "Entertainment",
-              "Mainstream",
-              "Technology",
-              "Education",
-              "Sports",
-            ].map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <GoChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-theme-subtle" />
+
+        <div className="flex flex-row gap-4">
+          <div className="relative w-full sm:w-28">
+            <select
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+              className="w-full appearance-none rounded-2xl border border-theme-border bg-theme-input px-4 py-3 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
+            >
+              {[
+                "Top",
+                "Newest"
+              ].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <GoChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-theme-subtle" />
+          </div>
+
+          <div className="relative w-full sm:w-48">
+            <select
+              value={selectedTag}
+              onChange={(event) => setSelectedTag(event.target.value)}
+              className="w-full appearance-none rounded-2xl border border-theme-border bg-theme-input px-4 py-3 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
+            >
+              {[
+                "All Websites",
+                "Personal Website",
+                "Entertainment",
+                "Mainstream",
+                "Technology",
+                "Education",
+                "Sports",
+              ].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <GoChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-theme-subtle" />
+          </div>
         </div>
       </div>
 
@@ -504,7 +587,7 @@ function WebsiteList() {
             </div>
           )}
 
-          {filteredWebsites.map((website, idx) => (
+          {orderWebsites(filteredWebsites).map((website, idx) => (
             <DisplaySingleWebsite
               key={website.website_name + idx}
               websiteInfo={website}

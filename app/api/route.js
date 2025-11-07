@@ -45,7 +45,9 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '100', 10);
-    const ascendingUpvotes = searchParams.get('ascending')=='true';
+    // Not equal to true because they should actually be descending
+    const ascendingUpvotes = searchParams.get('ascending')!='true';
+    const ascendingTime = searchParams.get('newest')!='true';
 
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit - 1;
@@ -55,7 +57,7 @@ export async function GET(req) {
         .from('Websites')
         .select()
         .order('website_upvotes', { ascending: ascendingUpvotes })
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: ascendingTime })
         .range(startIndex, endIndex)
 
     // console.log("GET DTA:", data);
