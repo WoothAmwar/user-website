@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { validateExternalUrl } from "./validating";  // your path
 
 /**
  * Adds an anime obejct into the supabase database
@@ -9,11 +10,12 @@ export async function POST(req) {
     const request_data = await req.json();  // contains --- name:string, tags: string[]
     const supabase = await createClient();
     // const website_name = "https://app.flocus.com";
-    if (!valid_website({website_name: request_data.name})) {
+    if (!await valid_website({website_name: request_data.name})) {
         return Response.json({ "data": {"valid": 0} }, {
             status: 200
         });
     }
+    console.log("ADDING:"+request_data.name+" | NOW");
     const { data, error } = await supabase
         .from('Websites')
         .insert({
@@ -30,15 +32,23 @@ export async function POST(req) {
     });
 }
 
-const valid_website = ({website_name}) => {
-    console.log("WEBN:", website_name);
-    const bad_words = ["porn", "sex", "nude", "naked", "hentai", "boob", "nsfw", "ass", "tit", "cock", "penis", "fuck", "shit", "bitch", "nigg"];
+const valid_website = async ({website_name}) => {
+    // console.log("WEBN:", website_name, website_name.includes("."));
+    const bad_words = ["google.com", "bing.com", "porn", "sex", "nude", "naked", "hentai", "boob", "nsfw", "ass", "tit", "cock", "penis", "fuck", "shit", "bitch", "nigg"];
+    if (!website_name.includes(".")) {
+        return false;
+    }
     for (var i=0; i<bad_words.length; i++) {
         if (website_name.includes(bad_words[i])) {
-            return false
+            return false;
         }
     }
-    return true
+    const result = await validateExternalUrl(website_name);
+
+    if (!result.ok) {
+        return false;
+    }
+    return true;
 }
 
 export async function GET(req) {
