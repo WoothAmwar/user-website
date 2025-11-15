@@ -614,8 +614,31 @@ export default function Home() {
     document.title = "LinkPluck";
   }, []);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://linkpluck.com/",
+    "name": "LinkPluck",
+    "description": "LinkPluck is a community-driven platform to discover, share, and vote on the best links from across the web. Find your next favorite website, tool, or article.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://linkpluck.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "mainEntity": {
+      "@type": "ItemList",
+      "name": "Trending Links",
+      "description": "A list of the most popular and trending links shared by the LinkPluck community.",
+      "itemListElement": []
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       <AddWebsiteCard />
       <WebsiteList />
       <FeedbackForm className="mt-4" />
