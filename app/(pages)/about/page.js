@@ -59,6 +59,20 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <section className="grid rounded-3xl border border-theme-border bg-theme-surface p-8 shadow-surface">
+        <div className="space-y-3">
+          <h2 className="text-xl font-semibold text-theme-text">Contact</h2>
+          <p className="text-md text-blue-500">
+            <a href="https://www.linkedin.com/in/anwar-kader" target="_blank" rel="noopener noreferrer">
+            LinkedIn 
+            </a>
+          </p>
+          <p className="text-md text-blue-500">
+            <a href="https://github.com/WoothAmwar" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </p>
+        </div>
+      </section>
+
       <FeedbackForm />
     </div>
   );
