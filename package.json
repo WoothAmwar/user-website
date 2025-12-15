@@ -15,7 +15,7 @@
     "d3": "^7.9.0",
     "ipaddr.js": "^2.2.0",
     "jsonwebtoken": "^9.0.2",
-    "next": "15.0.3",
+    "next": "15.0.7",
     "rate-limiter-flexible": "^5.0.4",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
